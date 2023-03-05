@@ -1,0 +1,11 @@
+graph TD;
+    G[Github] --> |Данные о репозиториях| WS[WebScraper];
+
+    WS --> |Репозитории по теме 'awesome list'| P[Parser];
+
+    P --> |Спаршенные ссылки репозиториев из README полученных awesome-list`ов| IC[IssueClassifier];
+    IC --> |Issues для каждой ссылки, размеченные с помощью BERT| R[Repolier];
+
+    GH[GithubTorrent] --> |Данные для датасета| R;
+    WS --> |Значения целевого признака датасета| R;
+    R --> |Оценка на основании модели анализа данных репозитория| User;
