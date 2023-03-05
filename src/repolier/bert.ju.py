@@ -156,7 +156,7 @@ def get_f1_score(predictions, labels):
 
 def accuracy_per_class(predictions, labels):
     # Inverse the dictionary.
-    labels_lookup_table = {v: k for k, v in labels.items()}
+    labels_lookup_table = {v: k for k, v in label_dict.items()}
 
     # predictions_flattened = np.argmax(predictions, axis=1).flatten()
     labels_flattened = labels.flatten()
@@ -188,6 +188,9 @@ model.to(device)
 print(device)
 
 # %%
+from pathlib import Path  # noqa: 402
+
+Path("models").mkdir(parents=True, exist_ok=True)
 
 
 def get_inputs_from_batch(batch):
@@ -259,7 +262,7 @@ for epoch in tqdm(range(1, EPOCHS + 1)):
             {"training_loss": "{:.3f}".format(loss.item() / len(batch))}
         )
 
-    torch.save(model.state_dict(), f"data_volume/finetuned_BERT_epoch_{epoch}.model")
+    torch.save(model.state_dict(), f"models/finetuned_BERT_epoch_{epoch}.model")
 
     tqdm.write(f"\nEpoch {epoch}")
 
@@ -286,9 +289,7 @@ model.to(device)
 
 # %%
 model.load_state_dict(
-    torch.load(
-        "data_volume/finetuned_BERT_epoch_1.model", map_location=torch.device("cpu")
-    )
+    torch.load("models/finetuned_BERT_epoch_1.model", map_location=torch.device("cuda"))
 )
 
 # %%
