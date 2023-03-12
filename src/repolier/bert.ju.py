@@ -31,6 +31,7 @@ df["label"] = df.Conference.replace(label_dict)
 
 """%%
 ## Train and Vallidation Split
+Because dataset have unbalanced classes, we split the data in stratified fashion.
 %%"""
 
 from sklearn.model_selection import train_test_split  # noqa: 402
@@ -56,9 +57,10 @@ df.groupby(["Conference", "label", "data_type"]).count()
 BERT_MODEL_TYPE = "bert-base-uncased"
 
 
-def batch_encode_plus(data):
-    tokenizer = BertTokenizer.from_pretrained(BERT_MODEL_TYPE, do_lower_case=True)
+tokenizer = BertTokenizer.from_pretrained(BERT_MODEL_TYPE, do_lower_case=True)
 
+
+def batch_encode_plus(data):
     return tokenizer.batch_encode_plus(
         data.Title.values,
         # Sequences will be encoded with th especial tokens relative to their model.
@@ -154,16 +156,16 @@ def get_f1_score(predictions, labels):
     return f1_score(labels_flattened, predictions_flattened, average="weighted")
 
 
+# %%
 def accuracy_per_class(predictions, labels):
     # Inverse the dictionary.
     labels_lookup_table = {v: k for k, v in label_dict.items()}
 
-    # predictions_flattened = np.argmax(predictions, axis=1).flatten()
+    predictions_flattened = np.argmax(predictions, axis=1).flatten()
     labels_flattened = labels.flatten()
 
     for label in np.unique(labels_flattened):
-        # ? should be predictions_flattened?
-        y_predicted = predictions[labels_flattened == label]
+        y_predicted = predictions_flattened[labels_flattened == label]
         y_true = labels_flattened[labels_flattened == label]
 
         print(f"Class: {labels_lookup_table[label]}")
@@ -193,7 +195,7 @@ from pathlib import Path  # noqa: 402
 Path("models").mkdir(parents=True, exist_ok=True)
 
 
-def get_inputs_from_batch(batch):
+def map_batch_to_inputs(batch):
     return {
         "input_ids": batch[0],
         "attention_mask": batch[1],
@@ -210,7 +212,7 @@ def evaluate(dataloader_val):
     for batch in dataloader_val:
         batch = tuple(b.to(device) for b in batch)
 
-        inputs = get_inputs_from_batch(batch)
+        inputs = map_batch_to_inputs(batch)
 
         with torch.no_grad():
             outputs = model(**inputs)
@@ -240,12 +242,13 @@ for epoch in tqdm(range(1, EPOCHS + 1)):
     progress_bar = tqdm(
         dataloader_train, desc="Epoch {:1d}".format(epoch), leave=False, disable=False
     )
+
     for batch in progress_bar:
         model.zero_grad()
 
         batch = tuple(b.to(device) for b in batch)
 
-        inputs = get_inputs_from_batch(batch)
+        inputs = map_batch_to_inputs(batch)
 
         outputs = model(**inputs)
 
