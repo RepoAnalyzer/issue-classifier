@@ -22,10 +22,9 @@ df.Conference.value_counts()
 from sklearn import preprocessing
 
 le = preprocessing.LabelEncoder()
-df["label"] = le.fit_transform(df["Conference"])
-labels_encoded = le.classes_
+labels_encoded = le.fit(df.Conference).classes_
 labels_dict = {l: i for (i, l) in enumerate(labels_encoded)}
-df.Conference.replace(labels_dict)
+df["label"] = df.Conference.replace(labels_dict)
 df
 
 
@@ -159,7 +158,7 @@ def get_f1_score(predictions, labels):
 # %%
 def accuracy_per_class(predictions, labels):
     # Inverse the dictionary.
-    labels_lookup_table = {l: i for (i, l) in enumerate(labels_encoded)}
+    labels_lookup_table = {v: k for k, v in labels_dict.items()}
 
     predictions_flattened = np.argmax(predictions, axis=1).flatten()
     labels_flattened = labels.flatten()
@@ -181,7 +180,6 @@ import random  # noqa: 402
 seed_val = 17
 random.seed(seed_val)
 np.random.seed(seed_val)
-torch.use_deterministic_algorithms(True)
 torch.manual_seed(seed_val)
 torch.cuda.manual_seed_all(seed_val)
 
@@ -248,7 +246,7 @@ for epoch in tqdm(range(1, EPOCHS + 1)):
     for batch in progress_bar:
         model.zero_grad()
 
-        batch = tuple(b.long().to(device) for b in batch)
+        batch = tuple(b.to(device) for b in batch)
 
         inputs = map_batch_to_inputs(batch)
 
