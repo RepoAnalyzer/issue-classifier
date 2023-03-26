@@ -181,6 +181,7 @@ import random  # noqa: 402
 seed_val = 17
 random.seed(seed_val)
 np.random.seed(seed_val)
+torch.use_deterministic_algorithms(True)
 torch.manual_seed(seed_val)
 torch.cuda.manual_seed_all(seed_val)
 
@@ -191,6 +192,7 @@ print(device)
 
 # %%
 from pathlib import Path  # noqa: 402
+from torch import nn  # noqa: 402
 
 Path("models").mkdir(parents=True, exist_ok=True)
 
@@ -256,7 +258,7 @@ for epoch in tqdm(range(1, EPOCHS + 1)):
         loss_train_total += loss.item()
         loss.backward()
 
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
         optimizer.step()
         scheduler.step()
