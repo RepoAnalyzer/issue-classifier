@@ -19,15 +19,15 @@ df.Conference.value_counts()
 ## Encoding labels
 %%"""
 
-possible_labels = df.Conference.unique()
+from sklearn import preprocessing
 
-label_dict = {}
-for index, possible_label in enumerate(possible_labels):
-    label_dict[possible_label] = index
-label_dict
+le = preprocessing.LabelEncoder()
+df["label"] = le.fit_transform(df["Conference"])
+labels_encoded = le.classes_
+labels_dict = {l: i for (i, l) in enumerate(labels_encoded)}
+df.Conference.replace(labels_dict)
+df
 
-# %%
-df["label"] = df.Conference.replace(label_dict)
 
 """%%
 ## Train and Vallidation Split
@@ -96,7 +96,7 @@ dataset_val = TensorDataset(input_ids_val, attention_masks_val, labels_val)
 
 model = BertForSequenceClassification.from_pretrained(
     BERT_MODEL_TYPE,
-    num_labels=len(label_dict),
+    num_labels=len(labels_encoded),
     output_attentions=False,
     output_hidden_states=False,
 )
@@ -141,7 +141,7 @@ scheduler = get_linear_schedule_with_warmup(
 )
 
 """%%
-## Performance mentrics
+## Performance metrics
 We will use f1 and accuracy per class.
 %%"""
 
@@ -159,7 +159,7 @@ def get_f1_score(predictions, labels):
 # %%
 def accuracy_per_class(predictions, labels):
     # Inverse the dictionary.
-    labels_lookup_table = {v: k for k, v in label_dict.items()}
+    labels_lookup_table = {l: i for (i, l) in enumerate(labels_encoded)}
 
     predictions_flattened = np.argmax(predictions, axis=1).flatten()
     labels_flattened = labels.flatten()
@@ -246,7 +246,7 @@ for epoch in tqdm(range(1, EPOCHS + 1)):
     for batch in progress_bar:
         model.zero_grad()
 
-        batch = tuple(b.to(device) for b in batch)
+        batch = tuple(b.long().to(device) for b in batch)
 
         inputs = map_batch_to_inputs(batch)
 
@@ -283,7 +283,7 @@ for epoch in tqdm(range(1, EPOCHS + 1)):
 
 model = BertForSequenceClassification.from_pretrained(
     BERT_MODEL_TYPE,
-    num_labels=len(label_dict),
+    num_labels=len(labels_encoded),
     output_attentions=False,
     output_hidden_states=False,
 )
